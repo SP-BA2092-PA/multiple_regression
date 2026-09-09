@@ -17,6 +17,7 @@
         .stat-box { background-color: #f1f5f9; border-left: 4px solid #0d6efd; padding: 12px; border-radius: 4px; }
         .alert-knime { background-color: #fff8e1; border-color: #ffe082; color: #5d4037; }
         .gemini-box { background-color: #f0f7ff; border: 1px solid #cce5ff; border-radius: 8px; }
+        .interactive-panel { background-color: #eef2f7; border: 1px solid #cbd5e1; border-radius: 8px; }
     </style>
 </head>
 <body>
@@ -38,7 +39,7 @@
 
     <div class="container mb-5">
         
-        <!-- Controls & Mode Selector -->
+        <!-- Model Selection Header -->
         <div class="card p-3">
             <div class="row align-items-center">
                 <div class="col-md-5">
@@ -58,42 +59,39 @@
                     </div>
                 </div>
                 <div class="col-md-3 text-end mt-2 mt-md-0">
-                    <button class="btn btn-outline-danger btn-sm" onclick="resetData()">Reset Original mtcars</button>
+                    <button class="btn btn-outline-danger btn-sm" onclick="resetData()">Reset Original Data</button>
                 </div>
             </div>
         </div>
 
-        <!-- Main Plot & Dynamic Statistics -->
+        <!-- Main Plot & Statistics -->
         <div class="row">
             <!-- Plot Column -->
             <div class="col-lg-7">
                 <div class="card p-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h5 class="card-title fw-bold mb-0">Interactive Plot</h5>
-                        <span class="badge bg-info text-dark">Drag points to edit</span>
+                        <h5 class="card-title fw-bold mb-0">Interactive Regression Plot</h5>
+                        <span class="badge bg-primary">Click any point on chart to edit</span>
                     </div>
-                    <p class="small text-muted mb-2" id="drag-hint">Click and drag any blue dot on the chart to adjust values.</p>
                     
-                    <!-- Plot Div -->
-                    <div id="plotly-div" style="width: 100%; height: 400px;"></div>
+                    <!-- Plot Area -->
+                    <div id="plotly-div" style="width: 100%; height: 380px;"></div>
 
-                    <!-- Precise Point Adjustment Controls -->
-                    <div class="p-2 bg-light border rounded mt-2">
-                        <small class="fw-bold d-block mb-1">Precise Data Adjuster (Alternative to Dragging):</small>
-                        <div class="row g-2 align-items-center">
+                    <!-- Clean Interactive Control Box -->
+                    <div class="interactive-panel p-3 mt-2">
+                        <div class="row align-items-center g-2">
                             <div class="col-md-5">
-                                <select id="carSelect" class="form-select form-select-sm" onchange="loadCarValues()">
+                                <label class="form-label small fw-bold mb-1">Selected Vehicle:</label>
+                                <select id="carSelect" class="form-select form-select-sm" onchange="onCarSelectChange()">
                                     <!-- Options generated dynamically -->
                                 </select>
                             </div>
-                            <div class="col-md-4">
-                                <div class="input-group input-group-sm">
-                                    <span class="input-group-text">mpg</span>
-                                    <input type="number" id="mpgInput" class="form-control" step="0.5" onchange="manualPointUpdate()">
-                                </div>
-                            </div>
-                            <div class="col-md-3">
-                                <small class="text-muted">Select car & adjust mpg</small>
+                            <div class="col-md-7">
+                                <label class="form-label small fw-bold mb-1 d-flex justify-content-between">
+                                    <span>Adjust Target (mpg):</span>
+                                    <span id="sliderValueText" class="text-primary fw-bold">21.0 mpg</span>
+                                </label>
+                                <input type="range" class="form-range" id="mpgSlider" min="5" max="45" step="0.5" oninput="onSliderAdjust()">
                             </div>
                         </div>
                     </div>
@@ -136,38 +134,37 @@
                                 <tr>
                                     <td><strong>Corr $r(wt, qsec)$</strong></td>
                                     <td id="val-corr" class="fw-bold">-</td>
-                                    <td>Predictor Correlation</td>
+                                    <td>Predictor Association</td>
                                 </tr>
                                 <tr>
                                     <td><strong>VIF (wt, qsec)</strong></td>
                                     <td id="val-vif" class="fw-bold">-</td>
-                                    <td>Multicollinearity Severity</td>
+                                    <td>Multicollinearity Level</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="alert alert-secondary py-1 px-2 small mb-0" id="live-status">
-                        Status: Ready
+                        Status: Ready. Click any dot on chart to select car.
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Gemini AI Assistant Block -->
+        <!-- Gemini AI Tutor Box -->
         <div class="card p-4 gemini-box">
             <div class="row align-items-center">
                 <div class="col-md-4">
                     <h5 class="fw-bold text-primary mb-1">Gemini AI Tutor</h5>
-                    <p class="small text-muted mb-0">Ask any question related to Linear/Multiple Regression, $R^2$, RMSE, Correlation, VIF, or KNIME.</p>
+                    <p class="small text-muted mb-0">Ask any question on Linear/Multiple Regression, $R^2$, RMSE, Correlation, VIF, or KNIME nodes.</p>
                 </div>
                 <div class="col-md-8 mt-3 mt-md-0">
                     <div class="input-group mb-2">
-                        <input type="text" id="userInput" class="form-control" placeholder="e.g., What is the difference between R2 and RMSE?" onkeydown="if(event.key==='Enter') askGeminiDirect()">
-                        <button class="btn btn-primary" type="button" onclick="askGeminiDirect()">Open in Gemini ↗</button>
-                        <button class="btn btn-outline-secondary" type="button" onclick="copyPromptToClipboard()">Copy Prompt</button>
+                        <input type="text" id="userInput" class="form-control" placeholder="e.g., What happens to R2 when I drag a point far away from the line?" onkeydown="if(event.key==='Enter') launchGeminiWithPrompt()">
+                        <button class="btn btn-primary px-4" type="button" onclick="launchGeminiWithPrompt()">Ask Gemini ↗</button>
                     </div>
-                    <div class="alert alert-info py-1 px-2 small mb-0" id="gemini-status">
-                        💡 <strong>How it works:</strong> Click <strong>Open in Gemini</strong> to open your Gemini account in a new tab. If your browser blocks text pre-fill, click <strong>Copy Prompt</strong> and paste it into Gemini.
+                    <div class="alert alert-info py-2 px-3 small mb-0" id="gemini-status">
+                        💡 <strong>How it works:</strong> Clicking <strong>Ask Gemini</strong> automatically copies your prompt (including regression guardrails) to your clipboard and opens Gemini in a new tab. Simply press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste and ask!
                     </div>
                 </div>
             </div>
@@ -180,13 +177,13 @@
                 <div class="col-md-6">
                     <div class="p-3 border rounded">
                         <h6>Regression Equation & Parameters</h6>
-                        <p class="small mb-0">For SLR: $\hat{y} = \beta_0 + \beta_1 X_{wt}$. For MLR: $\hat{y} = \beta_0 + \beta_1 X_{wt} + \beta_2 X_{qsec}$. $\beta_0$ represents baseline value; $\beta_i$ represents slope adjusted for other features.</p>
+                        <p class="small mb-0">SLR: $\hat{y} = \beta_0 + \beta_1 X_{wt}$. MLR: $\hat{y} = \beta_0 + \beta_1 X_{wt} + \beta_2 X_{qsec}$. $\beta_0$ represents baseline value; $\beta_i$ represents slope adjusted for other features.</p>
                     </div>
                 </div>
                 <div class="col-md-6">
                     <div class="p-3 border rounded">
                         <h6>$R^2$ (Coefficient of Determination) & RMSE</h6>
-                        <p class="small mb-0">$R^2 = 1 - (SS_{res}/SS_{tot})$. Measures proportion of variance explained by model. $RMSE = \sqrt{\frac{1}{n}\sum(y_i-\hat{y}_i)^2}$ measures average prediction error magnitude in original units ($mpg$).</p>
+                        <p class="small mb-0">$R^2 = 1 - (SS_{res}/SS_{tot})$. Measures proportion of variance explained by model. $RMSE = \sqrt{\frac{1}{n}\sum(y_i-\hat{y}_i)^2}$ measures standard prediction error magnitude in $mpg$.</p>
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -217,7 +214,7 @@
 
     </div>
 
-    <!-- Logic Script -->
+    <!-- JavaScript Execution Logic -->
     <script>
         const rawMtcars = [
             {model: "Mazda RX4", mpg: 21.0, wt: 2.620, qsec: 16.46},
@@ -255,6 +252,7 @@
         ];
 
         let dataset = JSON.parse(JSON.stringify(rawMtcars));
+        let selectedIndex = 0;
 
         function populateCarDropdown() {
             const select = document.getElementById('carSelect');
@@ -265,37 +263,41 @@
                 opt.innerText = item.model;
                 select.appendChild(opt);
             });
-            loadCarValues();
+            select.value = selectedIndex;
+            updateControlsForSelectedCar();
         }
 
-        function loadCarValues() {
-            const index = document.getElementById('carSelect').value;
-            document.getElementById('mpgInput').value = dataset[index].mpg;
+        function updateControlsForSelectedCar() {
+            const car = dataset[selectedIndex];
+            document.getElementById('mpgSlider').value = car.mpg;
+            document.getElementById('sliderValueText').innerText = car.mpg.toFixed(1) + " mpg";
         }
 
-        function manualPointUpdate() {
-            const index = document.getElementById('carSelect').value;
-            const newMpg = parseFloat(document.getElementById('mpgInput').value);
-            if (!isNaN(newMpg)) {
-                dataset[index].mpg = newMpg;
-                document.getElementById('live-status').innerText = `Updated ${dataset[index].model} mpg to ${newMpg}`;
-                recalculateAndDraw();
-            }
+        function onCarSelectChange() {
+            selectedIndex = parseInt(document.getElementById('carSelect').value);
+            updateControlsForSelectedCar();
+            document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
+            recalculateAndDraw();
+        }
+
+        function onSliderAdjust() {
+            const newMpg = parseFloat(document.getElementById('mpgSlider').value);
+            dataset[selectedIndex].mpg = newMpg;
+            document.getElementById('sliderValueText').innerText = newMpg.toFixed(1) + " mpg";
+            document.getElementById('live-status').innerText = `Modified ${dataset[selectedIndex].model} mpg to ${newMpg.toFixed(1)}`;
+            recalculateAndDraw();
         }
 
         function resetData() {
             dataset = JSON.parse(JSON.stringify(rawMtcars));
-            loadCarValues();
-            document.getElementById('live-status').innerText = "Status: Dataset reset to default mtcars";
+            updateControlsForSelectedCar();
+            document.getElementById('live-status').innerText = "Status: Dataset reset to original mtcars values.";
             recalculateAndDraw();
         }
 
         function switchModel() {
             const isMLR = document.getElementById('mlr').checked;
             document.getElementById('active-predictors').innerText = isMLR ? "wt + qsec" : "wt";
-            document.getElementById('drag-hint').innerText = isMLR 
-                ? "3D View: Displaying fitted surface plane. Use the drop-down below to adjust point values."
-                : "2D View: Click and drag any point along the y-axis (mpg) to update OLS parameters live.";
             recalculateAndDraw();
         }
 
@@ -405,6 +407,10 @@
             const xLine = [1.0, 6.0];
             const yLine = xLine.map(x => beta0 + beta1 * x);
 
+            // Highlight selected point with an outer ring
+            const colors = dataset.map((_, idx) => idx === selectedIndex ? '#dc3545' : '#0d6efd');
+            const sizes = dataset.map((_, idx) => idx === selectedIndex ? 14 : 9);
+
             const tracePoints = { 
                 x: X, 
                 y: Y, 
@@ -412,7 +418,7 @@
                 mode: 'markers', 
                 type: 'scatter', 
                 name: 'Data Points', 
-                marker: { size: 10, color: '#0d6efd' } 
+                marker: { size: sizes, color: colors } 
             };
             
             const traceLine = { 
@@ -421,37 +427,28 @@
                 mode: 'lines', 
                 type: 'scatter', 
                 name: 'Fitted Line', 
-                line: { color: '#dc3545', width: 2 } 
+                line: { color: '#198754', width: 2.5 } 
             };
 
             const layout = { 
                 title: 'Simple Linear Regression (mpg ~ wt)', 
-                xaxis: { title: 'Weight (wt)', range: [1.0, 6.0] }, 
-                yaxis: { title: 'Miles Per Gallon (mpg)', range: [5, 40] }, 
-                margin: { t: 40, l: 40, r: 20, b: 40 } 
+                xaxis: { title: 'Weight (wt)', range: [1.0, 6.0], fixedrange: true }, 
+                yaxis: { title: 'Miles Per Gallon (mpg)', range: [0, 45], fixedrange: true }, 
+                margin: { t: 40, l: 40, r: 20, b: 40 },
+                hovermode: 'closest'
             };
 
-            Plotly.react('plotly-div', [tracePoints, traceLine], layout, { editable: true, responsive: true });
+            Plotly.react('plotly-div', [tracePoints, traceLine], layout, { responsive: true, displayModeBar: false });
 
-            // Clean event handler for dragging without chart distortion
+            // Attach clean click listener to pick points
             const pDiv = document.getElementById('plotly-div');
-            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_relayout');
-            
-            pDiv.on('plotly_relayout', function(eventData) {
-                let updated = false;
-                for (let key in eventData) {
-                    if (key.includes('y[')) {
-                        const match = key.match(/\d+/);
-                        if (match) {
-                            const idx = parseInt(match[0]);
-                            dataset[idx].mpg = Math.max(0, parseFloat(eventData[key]));
-                            updated = true;
-                        }
-                    }
-                }
-                if (updated) {
-                    document.getElementById('live-status').innerText = "Status: Point updated on plot!";
-                    loadCarValues();
+            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_click');
+            pDiv.on('plotly_click', function(data) {
+                if(data.points && data.points[0]) {
+                    selectedIndex = data.points[0].pointIndex;
+                    document.getElementById('carSelect').value = selectedIndex;
+                    updateControlsForSelectedCar();
+                    document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
                     recalculateAndDraw();
                 }
             });
@@ -459,7 +456,18 @@
 
         function draw3DPlot(X1, X2, Y, beta0, beta1, beta2) {
             const names = dataset.map(d => d.model);
-            const tracePoints = { x: X1, y: X2, z: Y, text: names, mode: 'markers', type: 'scatter3d', name: 'Cars', marker: { size: 5, color: '#0d6efd' } };
+            const colors = dataset.map((_, idx) => idx === selectedIndex ? '#dc3545' : '#0d6efd');
+            const sizes = dataset.map((_, idx) => idx === selectedIndex ? 8 : 5);
+
+            const tracePoints = { 
+                x: X1, y: X2, z: Y, 
+                text: names, 
+                mode: 'markers', 
+                type: 'scatter3d', 
+                name: 'Cars', 
+                marker: { size: sizes, color: colors } 
+            };
+
             const xGrid = [1.5, 3.5, 5.5], yGrid = [14, 18, 23];
             let zPlane = [];
             for (let i = 0; i < yGrid.length; i++) {
@@ -476,37 +484,34 @@
             };
 
             Plotly.react('plotly-div', [tracePoints, tracePlane], layout, { responsive: true });
+
+            const pDiv = document.getElementById('plotly-div');
+            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_click');
+            pDiv.on('plotly_click', function(data) {
+                if(data.points && data.points[0]) {
+                    selectedIndex = data.points[0].pointNumber;
+                    document.getElementById('carSelect').value = selectedIndex;
+                    updateControlsForSelectedCar();
+                    document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
+                    recalculateAndDraw();
+                }
+            });
         }
 
-        function buildFullPrompt() {
-            const question = document.getElementById('userInput').value.trim();
-            if (!question) return "";
-            return "Role: You are a University Professor in Predictive Analytics.\n" +
-                "Instruction: Answer ONLY questions related to Linear Regression, Multiple Regression, R2, RMSE, Correlation, Multicollinearity, VIF, or KNIME nodes. If off-topic, politely decline.\n\n" +
-                "Student Question: " + question;
-        }
-
-        function askGeminiDirect() {
-            const fullPrompt = buildFullPrompt();
-            if (!fullPrompt) {
-                alert("Please enter a question first.");
+        function launchGeminiWithPrompt() {
+            const userText = document.getElementById('userInput').value.trim();
+            if (!userText) {
+                alert("Please enter a question for Gemini first.");
                 return;
             }
-            // Open Gemini in a new tab
-            const geminiUrl = `https://gemini.google.com/app?prompt=${encodeURIComponent(fullPrompt)}`;
-            window.open(geminiUrl, '_blank');
-        }
 
-        function copyPromptToClipboard() {
-            const fullPrompt = buildFullPrompt();
-            if (!fullPrompt) {
-                alert("Please enter a question first.");
-                return;
-            }
-            navigator.clipboard.writeText(fullPrompt).then(() => {
-                document.getElementById('gemini-status').innerHTML = "✅ <strong>Prompt copied to clipboard!</strong> Now paste (Ctrl+V) into Gemini.";
+            const promptText = `[SYSTEM INSTRUCTION: You are an expert university professor teaching Predictive Analytics. TOPIC RESTRICTION: Answer strictly on Linear/Multiple Regression, R2, RMSE, Correlation, Multicollinearity, VIF, or KNIME nodes. If off-topic, politely decline.]\n\nStudent Question: ${userText}`;
+
+            navigator.clipboard.writeText(promptText).then(() => {
+                document.getElementById('gemini-status').innerHTML = "✅ <strong>Prompt copied to clipboard!</strong> Opening Gemini... Press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste into Gemini.";
+                window.open("https://gemini.google.com/app", "_blank");
             }).catch(() => {
-                alert("Failed to copy. Please copy manually.");
+                window.open("https://gemini.google.com/app", "_blank");
             });
         }
 
