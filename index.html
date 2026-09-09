@@ -27,7 +27,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-1 fw-bold">Interactive Predictive Analytics Module</h1>
-                    <p class="mb-0 text-light small">Linear & Multiple Regression Visualizer (mtcars Data) + Direct Gemini AI Integration</p>
+                    <p class="mb-0 text-light small">Linear & Multiple Regression Visualizer (mtcars Data) + Gemini AI Assistant</p>
                 </div>
                 <div>
                     <span class="badge bg-warning text-dark fs-6">KNIME Platform Context</span>
@@ -70,10 +70,33 @@
                 <div class="card p-3">
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <h5 class="card-title fw-bold mb-0">Interactive Plot</h5>
-                        <span class="badge bg-info text-dark">Drag points to see dynamic recalculation</span>
+                        <span class="badge bg-info text-dark">Drag points to edit</span>
                     </div>
-                    <p class="small text-muted mb-2" id="drag-hint">Click and drag any blue point in the chart to update OLS parameters instantly!</p>
-                    <div id="plotly-div" style="width: 100%; height: 430px;"></div>
+                    <p class="small text-muted mb-2" id="drag-hint">Click and drag any blue dot on the chart to adjust values.</p>
+                    
+                    <!-- Plot Div -->
+                    <div id="plotly-div" style="width: 100%; height: 400px;"></div>
+
+                    <!-- Precise Point Adjustment Controls -->
+                    <div class="p-2 bg-light border rounded mt-2">
+                        <small class="fw-bold d-block mb-1">Precise Data Adjuster (Alternative to Dragging):</small>
+                        <div class="row g-2 align-items-center">
+                            <div class="col-md-5">
+                                <select id="carSelect" class="form-select form-select-sm" onchange="loadCarValues()">
+                                    <!-- Options generated dynamically -->
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="input-group input-group-sm">
+                                    <span class="input-group-text">mpg</span>
+                                    <input type="number" id="mpgInput" class="form-control" step="0.5" onchange="manualPointUpdate()">
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <small class="text-muted">Select car & adjust mpg</small>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -124,26 +147,27 @@
                         </table>
                     </div>
                     <div class="alert alert-secondary py-1 px-2 small mb-0" id="live-status">
-                        Status: Ready (Drag dots on plot)
+                        Status: Ready
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Direct Gemini AI Assistant Block (No API Key Required) -->
+        <!-- Gemini AI Assistant Block -->
         <div class="card p-4 gemini-box">
             <div class="row align-items-center">
                 <div class="col-md-4">
-                    <h5 class="fw-bold text-primary mb-1">Gemini AI Study Assistant</h5>
-                    <p class="small text-muted mb-0">Type your regression question below. Clicking <strong>Ask Gemini</strong> will launch your personal Gemini app with the question formatted specifically for this topic.</p>
+                    <h5 class="fw-bold text-primary mb-1">Gemini AI Tutor</h5>
+                    <p class="small text-muted mb-0">Ask any question related to Linear/Multiple Regression, $R^2$, RMSE, Correlation, VIF, or KNIME.</p>
                 </div>
                 <div class="col-md-8 mt-3 mt-md-0">
-                    <div class="input-group">
-                        <input type="text" id="userInput" class="form-control" placeholder="e.g., Explain what VIF measures in simple terms..." onkeydown="if(event.key==='Enter') askGeminiDirect()">
-                        <button class="btn btn-primary" type="button" onclick="askGeminiDirect()">Ask Gemini ↗</button>
+                    <div class="input-group mb-2">
+                        <input type="text" id="userInput" class="form-control" placeholder="e.g., What is the difference between R2 and RMSE?" onkeydown="if(event.key==='Enter') askGeminiDirect()">
+                        <button class="btn btn-primary" type="button" onclick="askGeminiDirect()">Open in Gemini ↗</button>
+                        <button class="btn btn-outline-secondary" type="button" onclick="copyPromptToClipboard()">Copy Prompt</button>
                     </div>
-                    <div class="form-text small mt-2">
-                        🔒 <strong>Zero Setup:</strong> Uses your existing Google account in a new tab. Includes automatic system rules restricting responses to regression topics only.
+                    <div class="alert alert-info py-1 px-2 small mb-0" id="gemini-status">
+                        💡 <strong>How it works:</strong> Click <strong>Open in Gemini</strong> to open your Gemini account in a new tab. If your browser blocks text pre-fill, click <strong>Copy Prompt</strong> and paste it into Gemini.
                     </div>
                 </div>
             </div>
@@ -195,7 +219,6 @@
 
     <!-- Logic Script -->
     <script>
-        // Raw Dataset
         const rawMtcars = [
             {model: "Mazda RX4", mpg: 21.0, wt: 2.620, qsec: 16.46},
             {model: "Mazda RX4 Wag", mpg: 21.0, wt: 2.875, qsec: 17.02},
@@ -233,8 +256,37 @@
 
         let dataset = JSON.parse(JSON.stringify(rawMtcars));
 
+        function populateCarDropdown() {
+            const select = document.getElementById('carSelect');
+            select.innerHTML = '';
+            dataset.forEach((item, index) => {
+                const opt = document.createElement('option');
+                opt.value = index;
+                opt.innerText = item.model;
+                select.appendChild(opt);
+            });
+            loadCarValues();
+        }
+
+        function loadCarValues() {
+            const index = document.getElementById('carSelect').value;
+            document.getElementById('mpgInput').value = dataset[index].mpg;
+        }
+
+        function manualPointUpdate() {
+            const index = document.getElementById('carSelect').value;
+            const newMpg = parseFloat(document.getElementById('mpgInput').value);
+            if (!isNaN(newMpg)) {
+                dataset[index].mpg = newMpg;
+                document.getElementById('live-status').innerText = `Updated ${dataset[index].model} mpg to ${newMpg}`;
+                recalculateAndDraw();
+            }
+        }
+
         function resetData() {
             dataset = JSON.parse(JSON.stringify(rawMtcars));
+            loadCarValues();
+            document.getElementById('live-status').innerText = "Status: Dataset reset to default mtcars";
             recalculateAndDraw();
         }
 
@@ -242,8 +294,8 @@
             const isMLR = document.getElementById('mlr').checked;
             document.getElementById('active-predictors').innerText = isMLR ? "wt + qsec" : "wt";
             document.getElementById('drag-hint').innerText = isMLR 
-                ? "3D View: Interactive surface recalculates dynamically as data points adjust."
-                : "2D View: Click and drag any point along wt/mpg axes to recalculate OLS line live!";
+                ? "3D View: Displaying fitted surface plane. Use the drop-down below to adjust point values."
+                : "2D View: Click and drag any point along the y-axis (mpg) to update OLS parameters live.";
             recalculateAndDraw();
         }
 
@@ -308,7 +360,7 @@
                 ssRes += Math.pow(Y[i] - yHat, 2);
                 ssTot += Math.pow(Y[i] - meanY, 2);
             }
-            return { beta0, beta1, r2: 1 - (ssRes / ssTot), rmse: Math.sqrt(ssRes / n) };
+            return { beta0, beta1, r2: Math.max(0, 1 - (ssRes / ssTot)), rmse: Math.sqrt(ssRes / n) };
         }
 
         function solveMLR(X1, X2, Y) {
@@ -333,7 +385,7 @@
                 ssRes += Math.pow(Y[i] - yHat, 2);
                 ssTot += Math.pow(Y[i] - meanY, 2);
             }
-            return { beta0, beta1, beta2, r2: 1 - (ssRes / ssTot), rmse: Math.sqrt(ssRes / n) };
+            return { beta0, beta1, beta2, r2: Math.max(0, 1 - (ssRes / ssTot)), rmse: Math.sqrt(ssRes / n) };
         }
 
         function invert3x3(m) {
@@ -350,22 +402,56 @@
 
         function draw2DPlot(X, Y, beta0, beta1) {
             const names = dataset.map(d => d.model);
-            const xLine = [Math.min(...X) - 0.5, Math.max(...X) + 0.5];
+            const xLine = [1.0, 6.0];
             const yLine = xLine.map(x => beta0 + beta1 * x);
 
-            const tracePoints = { x: X, y: Y, text: names, mode: 'markers', type: 'scatter', name: 'Data Points', marker: { size: 10, color: '#0d6efd' } };
-            const traceLine = { x: xLine, y: yLine, mode: 'lines', type: 'scatter', name: 'Fitted Line', line: { color: '#dc3545', width: 2 } };
+            const tracePoints = { 
+                x: X, 
+                y: Y, 
+                text: names, 
+                mode: 'markers', 
+                type: 'scatter', 
+                name: 'Data Points', 
+                marker: { size: 10, color: '#0d6efd' } 
+            };
+            
+            const traceLine = { 
+                x: xLine, 
+                y: yLine, 
+                mode: 'lines', 
+                type: 'scatter', 
+                name: 'Fitted Line', 
+                line: { color: '#dc3545', width: 2 } 
+            };
 
-            Plotly.newPlot('plotly-div', [tracePoints, traceLine], { title: 'Simple Linear Regression (Drag points to edit)', xaxis: { title: 'Weight (wt)' }, yaxis: { title: 'Miles Per Gallon (mpg)' }, margin: { t: 40, l: 40, r: 20, b: 40 } }, { editable: true, responsive: true });
+            const layout = { 
+                title: 'Simple Linear Regression (mpg ~ wt)', 
+                xaxis: { title: 'Weight (wt)', range: [1.0, 6.0] }, 
+                yaxis: { title: 'Miles Per Gallon (mpg)', range: [5, 40] }, 
+                margin: { t: 40, l: 40, r: 20, b: 40 } 
+            };
 
-            document.getElementById('plotly-div').on('plotly_relayout', function(eventData) {
+            Plotly.react('plotly-div', [tracePoints, traceLine], layout, { editable: true, responsive: true });
+
+            // Clean event handler for dragging without chart distortion
+            const pDiv = document.getElementById('plotly-div');
+            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_relayout');
+            
+            pDiv.on('plotly_relayout', function(eventData) {
                 let updated = false;
                 for (let key in eventData) {
-                    if (key.startsWith('x[')) { dataset[parseInt(key.match(/\d+/)[0])].wt = eventData[key]; updated = true; }
-                    if (key.startsWith('y[')) { dataset[parseInt(key.match(/\d+/)[0])].mpg = eventData[key]; updated = true; }
+                    if (key.includes('y[')) {
+                        const match = key.match(/\d+/);
+                        if (match) {
+                            const idx = parseInt(match[0]);
+                            dataset[idx].mpg = Math.max(0, parseFloat(eventData[key]));
+                            updated = true;
+                        }
+                    }
                 }
                 if (updated) {
-                    document.getElementById('live-status').innerText = "Status: Point modified! Recalculating metrics...";
+                    document.getElementById('live-status').innerText = "Status: Point updated on plot!";
+                    loadCarValues();
                     recalculateAndDraw();
                 }
             });
@@ -383,26 +469,49 @@
             }
             const tracePlane = { x: xGrid, y: yGrid, z: zPlane, type: 'surface', opacity: 0.5, showscale: false, colorscale: 'Reds', name: 'Fitted Surface' };
 
-            Plotly.newPlot('plotly-div', [tracePoints, tracePlane], { title: 'Multiple Linear Regression Plane (mpg ~ wt + qsec)', scene: { xaxis: { title: 'wt' }, yaxis: { title: 'qsec' }, zaxis: { title: 'mpg' } }, margin: { t: 30, l: 0, r: 0, b: 0 } }, { responsive: true });
+            const layout = { 
+                title: 'Multiple Linear Regression Plane (mpg ~ wt + qsec)', 
+                scene: { xaxis: { title: 'wt' }, yaxis: { title: 'qsec' }, zaxis: { title: 'mpg' } }, 
+                margin: { t: 30, l: 0, r: 0, b: 0 } 
+            };
+
+            Plotly.react('plotly-div', [tracePoints, tracePlane], layout, { responsive: true });
         }
 
-        // Direct Gemini Deep Link Function
-        function askGeminiDirect() {
+        function buildFullPrompt() {
             const question = document.getElementById('userInput').value.trim();
-            if (!question) return;
-
-            // System prompt + topic constraint wrapped into the prompt text
-            const fullPrompt = "[SYSTEM INSTRUCTION: You are an expert university professor teaching Predictive Analytics (Linear Regression, Multiple Regression, mtcars dataset, and KNIME). " +
-                "TOPIC RESTRICTION: You MUST ONLY answer questions strictly related to Linear/Multiple Regression, Regression Equations, R2, RMSE, Correlation, Multicollinearity, VIF, Residual Analysis, or KNIME nodes. " +
-                "If the query is off-topic, politely decline by stating you only teach regression analytics topics.]\n\n" +
+            if (!question) return "";
+            return "Role: You are a University Professor in Predictive Analytics.\n" +
+                "Instruction: Answer ONLY questions related to Linear Regression, Multiple Regression, R2, RMSE, Correlation, Multicollinearity, VIF, or KNIME nodes. If off-topic, politely decline.\n\n" +
                 "Student Question: " + question;
+        }
 
-            // Encode string for URL and launch gemini.google.com tab
+        function askGeminiDirect() {
+            const fullPrompt = buildFullPrompt();
+            if (!fullPrompt) {
+                alert("Please enter a question first.");
+                return;
+            }
+            // Open Gemini in a new tab
             const geminiUrl = `https://gemini.google.com/app?prompt=${encodeURIComponent(fullPrompt)}`;
             window.open(geminiUrl, '_blank');
         }
 
+        function copyPromptToClipboard() {
+            const fullPrompt = buildFullPrompt();
+            if (!fullPrompt) {
+                alert("Please enter a question first.");
+                return;
+            }
+            navigator.clipboard.writeText(fullPrompt).then(() => {
+                document.getElementById('gemini-status').innerHTML = "✅ <strong>Prompt copied to clipboard!</strong> Now paste (Ctrl+V) into Gemini.";
+            }).catch(() => {
+                alert("Failed to copy. Please copy manually.");
+            });
+        }
+
         window.onload = function() {
+            populateCarDropdown();
             recalculateAndDraw();
         };
     </script>
