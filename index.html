@@ -6,8 +6,6 @@
     <title>Predictive Analytics: Interactive Regression & AI Tutor</title>
     <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Plotly.js -->
-    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
     <!-- MathJax -->
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <style>
@@ -16,8 +14,10 @@
         .knime-header { background: linear-gradient(135deg, #1e293b 0%, #334155 100%); color: #ffd000; }
         .stat-box { background-color: #f1f5f9; border-left: 4px solid #0d6efd; padding: 12px; border-radius: 4px; }
         .alert-knime { background-color: #fff8e1; border-color: #ffe082; color: #5d4037; }
-        .gemini-box { background-color: #f0f7ff; border: 1px solid #cce5ff; border-radius: 8px; }
-        .interactive-panel { background-color: #eef2f7; border: 1px solid #cbd5e1; border-radius: 8px; }
+        .ai-chat-box { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; height: 260px; overflow-y: auto; padding: 15px; }
+        .chat-msg-user { background-color: #0d6efd; color: white; border-radius: 12px 12px 0 12px; padding: 8px 12px; margin-bottom: 8px; max-width: 80%; margin-left: auto; }
+        .chat-msg-ai { background-color: #f1f5f9; color: #1e293b; border-radius: 12px 12px 12px 0; padding: 8px 12px; margin-bottom: 8px; max-width: 85%; border-left: 3px solid #0d6efd; }
+        canvas { background-color: #ffffff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -28,7 +28,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div>
                     <h1 class="h3 mb-1 fw-bold">Interactive Predictive Analytics Module</h1>
-                    <p class="mb-0 text-light small">Linear & Multiple Regression Visualizer (mtcars Data) + Gemini AI Assistant</p>
+                    <p class="mb-0 text-light small">Linear & Multiple Regression Visualizer (mtcars Data) + In-App AI Tutor</p>
                 </div>
                 <div>
                     <span class="badge bg-warning text-dark fs-6">KNIME Platform Context</span>
@@ -39,7 +39,7 @@
 
     <div class="container mb-5">
         
-        <!-- Model Selection Header -->
+        <!-- Controls & Model Selection -->
         <div class="card p-3">
             <div class="row align-items-center">
                 <div class="col-md-5">
@@ -64,41 +64,29 @@
             </div>
         </div>
 
-        <!-- Main Plot & Statistics -->
+        <!-- Canvas Plot & Stats -->
         <div class="row">
             <!-- Plot Column -->
             <div class="col-lg-7">
                 <div class="card p-3">
-                    <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h5 class="card-title fw-bold mb-0">Interactive Regression Plot</h5>
-                        <span class="badge bg-primary">Click any point on chart to edit</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title fw-bold mb-0">Interactive Plot</h5>
+                        <span class="badge bg-success">Click & Drag points directly on chart</span>
                     </div>
                     
-                    <!-- Plot Area -->
-                    <div id="plotly-div" style="width: 100%; height: 380px;"></div>
+                    <!-- HTML5 Interactive Canvas -->
+                    <div class="text-center">
+                        <canvas id="regressionCanvas" width="600" height="380"></canvas>
+                    </div>
 
-                    <!-- Clean Interactive Control Box -->
-                    <div class="interactive-panel p-3 mt-2">
-                        <div class="row align-items-center g-2">
-                            <div class="col-md-5">
-                                <label class="form-label small fw-bold mb-1">Selected Vehicle:</label>
-                                <select id="carSelect" class="form-select form-select-sm" onchange="onCarSelectChange()">
-                                    <!-- Options generated dynamically -->
-                                </select>
-                            </div>
-                            <div class="col-md-7">
-                                <label class="form-label small fw-bold mb-1 d-flex justify-content-between">
-                                    <span>Adjust Target (mpg):</span>
-                                    <span id="sliderValueText" class="text-primary fw-bold">21.0 mpg</span>
-                                </label>
-                                <input type="range" class="form-range" id="mpgSlider" min="5" max="45" step="0.5" oninput="onSliderAdjust()">
-                            </div>
-                        </div>
+                    <div class="p-2 bg-light border rounded mt-2 d-flex justify-content-between align-items-center">
+                        <small id="drag-status" class="text-muted">Hover or click any point to drag its MPG value up or down.</small>
+                        <small class="fw-bold text-primary" id="selected-car-name">None Selected</small>
                     </div>
                 </div>
             </div>
 
-            <!-- Stats Summary Column -->
+            <!-- Calculated Model Parameters -->
             <div class="col-lg-5">
                 <div class="card p-3 h-100">
                     <h5 class="card-title fw-bold">Calculated Model Parameters</h5>
@@ -134,70 +122,34 @@
                                 <tr>
                                     <td><strong>Corr $r(wt, qsec)$</strong></td>
                                     <td id="val-corr" class="fw-bold">-</td>
-                                    <td>Predictor Association</td>
+                                    <td>Predictor Correlation</td>
                                 </tr>
                                 <tr>
                                     <td><strong>VIF (wt, qsec)</strong></td>
                                     <td id="val-vif" class="fw-bold">-</td>
-                                    <td>Multicollinearity Level</td>
+                                    <td>Multicollinearity Severity</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                     <div class="alert alert-secondary py-1 px-2 small mb-0" id="live-status">
-                        Status: Ready. Click any dot on chart to select car.
+                        Status: Ready. Drag dots to observe parameter changes.
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Gemini AI Tutor Box -->
-        <div class="card p-4 gemini-box">
-            <div class="row align-items-center">
-                <div class="col-md-4">
-                    <h5 class="fw-bold text-primary mb-1">Gemini AI Tutor</h5>
-                    <p class="small text-muted mb-0">Ask any question on Linear/Multiple Regression, $R^2$, RMSE, Correlation, VIF, or KNIME nodes.</p>
-                </div>
-                <div class="col-md-8 mt-3 mt-md-0">
-                    <div class="input-group mb-2">
-                        <input type="text" id="userInput" class="form-control" placeholder="e.g., What happens to R2 when I drag a point far away from the line?" onkeydown="if(event.key==='Enter') launchGeminiWithPrompt()">
-                        <button class="btn btn-primary px-4" type="button" onclick="launchGeminiWithPrompt()">Ask Gemini ↗</button>
-                    </div>
-                    <div class="alert alert-info py-2 px-3 small mb-0" id="gemini-status">
-                        💡 <strong>How it works:</strong> Clicking <strong>Ask Gemini</strong> automatically copies your prompt (including regression guardrails) to your clipboard and opens Gemini in a new tab. Simply press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste and ask!
-                    </div>
+        <!-- In-App AI Assistant -->
+        <div class="card p-3">
+            <h5 class="fw-bold text-primary mb-2">In-App Analytics AI Tutor</h5>
+            <div class="ai-chat-box mb-3" id="chatBox">
+                <div class="chat-msg-ai">
+                    👋 Hello! I am your Analytics AI Tutor. Ask me any question about <strong>Regression equations, R², RMSE, Correlation, VIF, or KNIME nodes</strong>, or ask how dragging points affects your model!
                 </div>
             </div>
-        </div>
-
-        <!-- Theory Section -->
-        <div class="card p-4">
-            <h4 class="fw-bold mb-3">Core Analytics Concepts</h4>
-            <div class="row g-3">
-                <div class="col-md-6">
-                    <div class="p-3 border rounded">
-                        <h6>Regression Equation & Parameters</h6>
-                        <p class="small mb-0">SLR: $\hat{y} = \beta_0 + \beta_1 X_{wt}$. MLR: $\hat{y} = \beta_0 + \beta_1 X_{wt} + \beta_2 X_{qsec}$. $\beta_0$ represents baseline value; $\beta_i$ represents slope adjusted for other features.</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="p-3 border rounded">
-                        <h6>$R^2$ (Coefficient of Determination) & RMSE</h6>
-                        <p class="small mb-0">$R^2 = 1 - (SS_{res}/SS_{tot})$. Measures proportion of variance explained by model. $RMSE = \sqrt{\frac{1}{n}\sum(y_i-\hat{y}_i)^2}$ measures standard prediction error magnitude in $mpg$.</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="p-3 border rounded">
-                        <h6>Correlation ($r$)</h6>
-                        <p class="small mb-0">Quantifies degree of linear association between two variables, ranging from -1 to +1. High correlation between independent variables indicates potential multicollinearity.</p>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="p-3 border rounded">
-                        <h6>Multicollinearity & VIF</h6>
-                        <p class="small mb-0">Occurs when independent variables ($wt$ and $qsec$) are strongly correlated. $VIF = \frac{1}{1-R_j^2}$. VIF > 5-10 indicates high multicollinearity, inflating coefficient variance.</p>
-                    </div>
-                </div>
+            <div class="input-group">
+                <input type="text" id="userInput" class="form-control" placeholder="Ask a question (e.g., What does R2 tell us? or What happens when I drag an outlier?)" onkeydown="if(event.key==='Enter') sendAIMessage()">
+                <button class="btn btn-primary" onclick="sendAIMessage()">Ask Tutor</button>
             </div>
         </div>
 
@@ -214,7 +166,7 @@
 
     </div>
 
-    <!-- JavaScript Execution Logic -->
+    <!-- Application Script -->
     <script>
         const rawMtcars = [
             {model: "Mazda RX4", mpg: 21.0, wt: 2.620, qsec: 16.46},
@@ -252,46 +204,86 @@
         ];
 
         let dataset = JSON.parse(JSON.stringify(rawMtcars));
-        let selectedIndex = 0;
+        let draggedPointIndex = null;
+        let activeHoverIndex = null;
 
-        function populateCarDropdown() {
-            const select = document.getElementById('carSelect');
-            select.innerHTML = '';
-            dataset.forEach((item, index) => {
-                const opt = document.createElement('option');
-                opt.value = index;
-                opt.innerText = item.model;
-                select.appendChild(opt);
+        const canvas = document.getElementById('regressionCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Axis Bounds
+        const margin = { top: 30, right: 30, bottom: 50, left: 50 };
+        const xMin = 1.0, xMax = 6.0;
+        const yMin = 0.0, yMax = 45.0;
+
+        function toPixelX(val) {
+            return margin.left + ((val - xMin) / (xMax - xMin)) * (canvas.width - margin.left - margin.right);
+        }
+        function toPixelY(val) {
+            return canvas.height - margin.bottom - ((val - yMin) / (yMax - yMin)) * (canvas.height - margin.top - margin.bottom);
+        }
+        function toValueY(pixelY) {
+            const ratio = (canvas.height - margin.bottom - pixelY) / (canvas.height - margin.top - margin.bottom);
+            return yMin + ratio * (yMax - yMin);
+        }
+
+        // Mouse Drag Interaction
+        canvas.addEventListener('mousedown', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            // Find closest point
+            dataset.forEach((d, idx) => {
+                const px = toPixelX(d.wt);
+                const py = toPixelY(d.mpg);
+                const dist = Math.hypot(mouseX - px, mouseY - py);
+                if (dist < 12) {
+                    draggedPointIndex = idx;
+                    document.getElementById('selected-car-name').innerText = d.model;
+                }
             });
-            select.value = selectedIndex;
-            updateControlsForSelectedCar();
-        }
+        });
 
-        function updateControlsForSelectedCar() {
-            const car = dataset[selectedIndex];
-            document.getElementById('mpgSlider').value = car.mpg;
-            document.getElementById('sliderValueText').innerText = car.mpg.toFixed(1) + " mpg";
-        }
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
 
-        function onCarSelectChange() {
-            selectedIndex = parseInt(document.getElementById('carSelect').value);
-            updateControlsForSelectedCar();
-            document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
-            recalculateAndDraw();
-        }
+            if (draggedPointIndex !== null) {
+                let newMPG = toValueY(mouseY);
+                newMPG = Math.max(0, Math.min(45, newMPG)); // clamp
+                dataset[draggedPointIndex].mpg = newMPG;
+                document.getElementById('drag-status').innerText = `Dragging ${dataset[draggedPointIndex].model}: ${newMPG.toFixed(1)} mpg`;
+                recalculateAndDraw();
+            } else {
+                // Hover check
+                let found = null;
+                dataset.forEach((d, idx) => {
+                    const px = toPixelX(d.wt);
+                    const py = toPixelY(d.mpg);
+                    if (Math.hypot(mouseX - px, mouseY - py) < 12) {
+                        found = idx;
+                    }
+                });
+                activeHoverIndex = found;
+                if (found !== null) {
+                    document.getElementById('selected-car-name').innerText = dataset[found].model + ` (${dataset[found].mpg.toFixed(1)} mpg)`;
+                }
+                recalculateAndDraw();
+            }
+        });
 
-        function onSliderAdjust() {
-            const newMpg = parseFloat(document.getElementById('mpgSlider').value);
-            dataset[selectedIndex].mpg = newMpg;
-            document.getElementById('sliderValueText').innerText = newMpg.toFixed(1) + " mpg";
-            document.getElementById('live-status').innerText = `Modified ${dataset[selectedIndex].model} mpg to ${newMpg.toFixed(1)}`;
-            recalculateAndDraw();
-        }
+        window.addEventListener('mouseup', () => {
+            if (draggedPointIndex !== null) {
+                document.getElementById('drag-status').innerText = `Updated ${dataset[draggedPointIndex].model}!`;
+                draggedPointIndex = null;
+            }
+        });
 
         function resetData() {
             dataset = JSON.parse(JSON.stringify(rawMtcars));
-            updateControlsForSelectedCar();
-            document.getElementById('live-status').innerText = "Status: Dataset reset to original mtcars values.";
+            document.getElementById('drag-status').innerText = "Dataset reset to default mtcars.";
+            document.getElementById('selected-car-name').innerText = "None Selected";
             recalculateAndDraw();
         }
 
@@ -299,6 +291,56 @@
             const isMLR = document.getElementById('mlr').checked;
             document.getElementById('active-predictors').innerText = isMLR ? "wt + qsec" : "wt";
             recalculateAndDraw();
+        }
+
+        function drawChart(X, Y, beta0, beta1) {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Axes
+            ctx.beginPath();
+            ctx.strokeStyle = "#64748b";
+            ctx.lineWidth = 1;
+            // Y-axis
+            ctx.moveTo(margin.left, margin.top);
+            ctx.lineTo(margin.left, canvas.height - margin.bottom);
+            // X-axis
+            ctx.moveTo(margin.left, canvas.height - margin.bottom);
+            ctx.lineTo(canvas.width - margin.right, canvas.height - margin.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = "#334155";
+            ctx.font = "11px sans-serif";
+            ctx.fillText("Weight (wt)", canvas.width / 2, canvas.height - 10);
+            ctx.save();
+            ctx.translate(15, canvas.height / 2);
+            ctx.rotate(-Math.PI / 2);
+            ctx.fillText("MPG", 0, 0);
+            ctx.restore();
+
+            // Draw Fitted Line
+            const y1 = beta0 + beta1 * xMin;
+            const y2 = beta0 + beta1 * xMax;
+            ctx.beginPath();
+            ctx.strokeStyle = "#dc3545";
+            ctx.lineWidth = 2.5;
+            ctx.moveTo(toPixelX(xMin), toPixelY(y1));
+            ctx.lineTo(toPixelX(xMax), toPixelY(y2));
+            ctx.stroke();
+
+            // Draw Points
+            dataset.forEach((d, idx) => {
+                const px = toPixelX(d.wt);
+                const py = toPixelY(d.mpg);
+
+                ctx.beginPath();
+                ctx.arc(px, py, (idx === draggedPointIndex || idx === activeHoverIndex) ? 8 : 5, 0, Math.PI * 2);
+                ctx.fillStyle = (idx === draggedPointIndex || idx === activeHoverIndex) ? "#dc3545" : "#0d6efd";
+                ctx.fill();
+                ctx.strokeStyle = "#ffffff";
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+            });
         }
 
         function recalculateAndDraw() {
@@ -318,13 +360,13 @@
                 document.getElementById('equation-display').innerHTML = `$$\\text{mpg} = ${beta0.toFixed(2)} ${beta1 >= 0 ? '+' : ''} ${beta1.toFixed(2)} \\times \\text{wt}$$`;
                 document.getElementById('val-r2').innerText = r2.toFixed(3);
                 document.getElementById('val-rmse').innerText = rmse.toFixed(2) + " mpg";
-                draw2DPlot(X_wt, Y, beta0, beta1);
+                drawChart(X_wt, Y, beta0, beta1);
             } else {
                 const { beta0, beta1, beta2, r2, rmse } = solveMLR(X_wt, X_qsec, Y);
                 document.getElementById('equation-display').innerHTML = `$$\\text{mpg} = ${beta0.toFixed(2)} ${beta1 >= 0 ? '+' : ''} ${beta1.toFixed(2)} \\times \\text{wt} ${beta2 >= 0 ? '+' : ''} ${beta2.toFixed(2)} \\times \\text{qsec}$$`;
                 document.getElementById('val-r2').innerText = r2.toFixed(3);
                 document.getElementById('val-rmse').innerText = rmse.toFixed(2) + " mpg";
-                draw3DPlot(X_wt, X_qsec, Y, beta0, beta1, beta2);
+                drawChart(X_wt, Y, beta0, beta1);
             }
 
             if (window.MathJax) MathJax.typesetPromise();
@@ -402,121 +444,50 @@
             ];
         }
 
-        function draw2DPlot(X, Y, beta0, beta1) {
-            const names = dataset.map(d => d.model);
-            const xLine = [1.0, 6.0];
-            const yLine = xLine.map(x => beta0 + beta1 * x);
+        // In-App AI Tutor Logic
+        function sendAIMessage() {
+            const input = document.getElementById('userInput');
+            const q = input.value.trim();
+            if (!q) return;
 
-            // Highlight selected point with an outer ring
-            const colors = dataset.map((_, idx) => idx === selectedIndex ? '#dc3545' : '#0d6efd');
-            const sizes = dataset.map((_, idx) => idx === selectedIndex ? 14 : 9);
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `<div class="chat-msg-user">${escapeHtml(q)}</div>`;
+            input.value = '';
 
-            const tracePoints = { 
-                x: X, 
-                y: Y, 
-                text: names, 
-                mode: 'markers', 
-                type: 'scatter', 
-                name: 'Data Points', 
-                marker: { size: sizes, color: colors } 
-            };
-            
-            const traceLine = { 
-                x: xLine, 
-                y: yLine, 
-                mode: 'lines', 
-                type: 'scatter', 
-                name: 'Fitted Line', 
-                line: { color: '#198754', width: 2.5 } 
-            };
-
-            const layout = { 
-                title: 'Simple Linear Regression (mpg ~ wt)', 
-                xaxis: { title: 'Weight (wt)', range: [1.0, 6.0], fixedrange: true }, 
-                yaxis: { title: 'Miles Per Gallon (mpg)', range: [0, 45], fixedrange: true }, 
-                margin: { t: 40, l: 40, r: 20, b: 40 },
-                hovermode: 'closest'
-            };
-
-            Plotly.react('plotly-div', [tracePoints, traceLine], layout, { responsive: true, displayModeBar: false });
-
-            // Attach clean click listener to pick points
-            const pDiv = document.getElementById('plotly-div');
-            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_click');
-            pDiv.on('plotly_click', function(data) {
-                if(data.points && data.points[0]) {
-                    selectedIndex = data.points[0].pointIndex;
-                    document.getElementById('carSelect').value = selectedIndex;
-                    updateControlsForSelectedCar();
-                    document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
-                    recalculateAndDraw();
-                }
-            });
+            const reply = generateAIResponse(q.toLowerCase());
+            chatBox.innerHTML += `<div class="chat-msg-ai">${reply}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
         }
 
-        function draw3DPlot(X1, X2, Y, beta0, beta1, beta2) {
-            const names = dataset.map(d => d.model);
-            const colors = dataset.map((_, idx) => idx === selectedIndex ? '#dc3545' : '#0d6efd');
-            const sizes = dataset.map((_, idx) => idx === selectedIndex ? 8 : 5);
+        function generateAIResponse(q) {
+            const currentR2 = document.getElementById('val-r2').innerText;
+            const currentRMSE = document.getElementById('val-rmse').innerText;
 
-            const tracePoints = { 
-                x: X1, y: X2, z: Y, 
-                text: names, 
-                mode: 'markers', 
-                type: 'scatter3d', 
-                name: 'Cars', 
-                marker: { size: sizes, color: colors } 
-            };
-
-            const xGrid = [1.5, 3.5, 5.5], yGrid = [14, 18, 23];
-            let zPlane = [];
-            for (let i = 0; i < yGrid.length; i++) {
-                let row = [];
-                for (let j = 0; j < xGrid.length; j++) row.push(beta0 + beta1 * xGrid[j] + beta2 * yGrid[i]);
-                zPlane.push(row);
+            if (q.includes('r2') || q.includes('r-squared') || q.includes('variance')) {
+                return `<strong>R² (R-Squared) Explanation:</strong><br>R² represents the proportion of variance in <code>mpg</code> explained by your predictor variables. Currently, your model's R² is <strong>${currentR2}</strong>, meaning approximately ${(parseFloat(currentR2)*100).toFixed(1)}% of fuel efficiency variation is accounted for by the model.`;
             }
-            const tracePlane = { x: xGrid, y: yGrid, z: zPlane, type: 'surface', opacity: 0.5, showscale: false, colorscale: 'Reds', name: 'Fitted Surface' };
-
-            const layout = { 
-                title: 'Multiple Linear Regression Plane (mpg ~ wt + qsec)', 
-                scene: { xaxis: { title: 'wt' }, yaxis: { title: 'qsec' }, zaxis: { title: 'mpg' } }, 
-                margin: { t: 30, l: 0, r: 0, b: 0 } 
-            };
-
-            Plotly.react('plotly-div', [tracePoints, tracePlane], layout, { responsive: true });
-
-            const pDiv = document.getElementById('plotly-div');
-            pDiv.removeAllListeners && pDiv.removeAllListeners('plotly_click');
-            pDiv.on('plotly_click', function(data) {
-                if(data.points && data.points[0]) {
-                    selectedIndex = data.points[0].pointNumber;
-                    document.getElementById('carSelect').value = selectedIndex;
-                    updateControlsForSelectedCar();
-                    document.getElementById('live-status').innerText = `Selected: ${dataset[selectedIndex].model}`;
-                    recalculateAndDraw();
-                }
-            });
+            if (q.includes('rmse') || q.includes('error') || q.includes('residual')) {
+                return `<strong>RMSE (Root Mean Squared Error) Explanation:</strong><br>RMSE measures the average distance between observed data points and the fitted regression line. Your current live RMSE is <strong>${currentRMSE}</strong>. Lower RMSE indicates tighter fits and better predictions.`;
+            }
+            if (q.includes('vif') || q.includes('multicollinearity') || q.includes('correlation')) {
+                return `<strong>Multicollinearity & VIF Explanation:</strong><br>Multicollinearity occurs when independent variables (like vehicle weight <code>wt</code> and quarter-mile time <code>qsec</code>) correlate strongly with each other. A VIF below 5 (currently <strong>${document.getElementById('val-vif').innerText}</strong>) indicates minimal collinearity risk.`;
+            }
+            if (q.includes('drag') || q.includes('outlier') || q.includes('point') || q.includes('move')) {
+                return `<strong>Effect of Moving Points:</strong><br>When you drag a point vertically away from the regression line, residual errors increase, causing <strong>RMSE to rise</strong> and <strong>R² to drop</strong>. If you drag points on extreme ends ($X$ values), it alters the slope parameter ($\beta_1$).`;
+            }
+            if (q.includes('knime')) {
+                return `<strong>KNIME Platform Context:</strong><br>In KNIME, you configure this analysis using the <code>Linear Regression Learner</code> node to compute $\\beta$ coefficients, followed by the <code>Numeric Scorer</code> node to evaluate R² and RMSE outputs.`;
+            }
+            return `<strong>Predictive Analytics Concept Summary:</strong><br>Linear regression estimates target $Y$ using equation $\\hat{Y} = \\beta_0 + \\beta_1 X$. Try dragging points on the interactive chart to observe how R² and RMSE adjust in real time!`;
         }
 
-        function launchGeminiWithPrompt() {
-            const userText = document.getElementById('userInput').value.trim();
-            if (!userText) {
-                alert("Please enter a question for Gemini first.");
-                return;
-            }
-
-            const promptText = `[SYSTEM INSTRUCTION: You are an expert university professor teaching Predictive Analytics. TOPIC RESTRICTION: Answer strictly on Linear/Multiple Regression, R2, RMSE, Correlation, Multicollinearity, VIF, or KNIME nodes. If off-topic, politely decline.]\n\nStudent Question: ${userText}`;
-
-            navigator.clipboard.writeText(promptText).then(() => {
-                document.getElementById('gemini-status').innerHTML = "✅ <strong>Prompt copied to clipboard!</strong> Opening Gemini... Press <strong>Ctrl+V</strong> (or <strong>Cmd+V</strong>) to paste into Gemini.";
-                window.open("https://gemini.google.com/app", "_blank");
-            }).catch(() => {
-                window.open("https://gemini.google.com/app", "_blank");
+        function escapeHtml(string) {
+            return String(string).replace(/[&<>"']/g, function(s) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[s];
             });
         }
 
         window.onload = function() {
-            populateCarDropdown();
             recalculateAndDraw();
         };
     </script>
